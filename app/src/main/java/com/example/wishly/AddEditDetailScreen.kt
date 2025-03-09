@@ -1,5 +1,6 @@
 package com.example.wishly
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,25 +17,31 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.wishly.dataClasses.Wish
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun AddEditWishView(
-    updateId: Long,
+    id: Long,
     viewModel: WishViewModel,
     navController: NavController
 ) {
@@ -45,17 +52,30 @@ fun AddEditWishView(
                 brush = Brush.linearGradient(
                     colors = listOf(
                         colorResource(R.color.lightPink),
-                        Color(0xFFFFF5F7    )
+                        Color(0xFFFFF5F7)
                     ),
                     start = Offset(0f, 0f),
                     end = Offset(1000f, 1000f) // Increased values for better gradient spread
                 )
             )
     ) {
+        val context = LocalContext.current
+        if (id != 0L) {
+            LaunchedEffect(id) {
+                viewModel.getAllWishes(id).collect { wish ->
+                    viewModel.wishTitle = wish.title ?: ""
+                    viewModel.wishDescription = wish.description ?: ""
+                }
+            }
+        } else {
+            viewModel.wishTitle = ""
+            viewModel.wishDescription = ""
+        }
+        val scope = rememberCoroutineScope() // use this method to store data async. ,OR  for suspend function so to speak okay
         Scaffold(
             topBar = {
                 ActionBar(
-                    title = if (updateId == -1L) "Add Wish" else "Edit Wish",
+                    title = if (id == 0L) "Add Wish" else "Edit Wish",
                     showBackArrow = true,
                     onBackArrowPressed = { navController.popBackStack() }
                 )
@@ -94,14 +114,35 @@ fun AddEditWishView(
                         ),
                         onClick = {
                             if (viewModel.wishTitle.isNotEmpty() && viewModel.wishDescription.isNotEmpty()) {
-                                // Update
-                            } else {
-                                // Add
+                              if (id != 0L){
+//                                  update
+                                  val info = Wish(
+                                      id = id,
+                                      title = viewModel.wishTitle,
+                                      description = viewModel.wishDescription
+                                  )
+                                  viewModel.updateWish(info)
+                                  Toast.makeText(context, "update", Toast.LENGTH_SHORT).show()
+                              }else{
+                                  val info = Wish(
+                                      title = viewModel.wishTitle,
+                                      description = viewModel.wishDescription
+                                  )
+                                  viewModel.addWish(info)
+                                  Toast.makeText(context, "Add", Toast.LENGTH_SHORT).show()
+                              }
+                                scope.launch {
+                                    delay(300) // Ensures data is refreshed before navigating
+                                    navController.popBackStack()
+                                }
+                            }
+                            else {
+                                Toast.makeText(context, "enter the fields", Toast.LENGTH_SHORT).show()
                             }
                         }
                     ) {
                         Text(
-                            text = if (updateId == -1L) "Save" else "Update",
+                            text = if (id == 0L) "Save" else "Update",
                             modifier = Modifier.padding(8.dp),
                             style = androidx.compose.material3.MaterialTheme.typography.titleMedium
                         )
@@ -124,7 +165,9 @@ fun WishTextView(
         value = value,
         onValueChange = onValueChange,
         label = { Text(text = label , color = colorResource(R.color.pink))  },
-        modifier = Modifier.fillMaxWidth().padding(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
         colors = TextFieldDefaults.colors(
             focusedTextColor = colorResource(R.color.darkPink),
@@ -144,12 +187,12 @@ fun WishTextView(
 @Composable
 fun AddEditWishViewPreview() {
     val navController = rememberNavController()
-    val viewModel = remember { WishViewModel() }  // Mock ViewModel instance
-    AddEditWishView(
-        updateId = -1L,
-        viewModel = viewModel,
-        navController = navController
-    )
+//    val viewModel = remember { WishViewModel() }
+//    AddEditWishView(
+//        id = -1L,
+////        viewModel = viewModel,
+//        navController = navController
+//    )
 }
 
 

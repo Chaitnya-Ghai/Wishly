@@ -1,14 +1,14 @@
 package com.example.wishly.dataClasses
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+
+@Entity(tableName = "WishTable")
 data class Wish(
-    val id :Long?=0L,
+    @PrimaryKey(autoGenerate = true)
+    val id :Long?=null,
     val title: String?="",
     val description: String?="",
 )
-object DummyList{
-    val Wishlist = listOf(
-        Wish(title = "Wish 1", description = "Description 1"),
-        Wish(title = "Wish 2", description = "Description 2"),
-        Wish(title = "Wish 3", description = "Description 3"),
-    )
-}
+
